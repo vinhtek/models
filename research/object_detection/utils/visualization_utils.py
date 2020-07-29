@@ -42,6 +42,8 @@ from object_detection.core import keypoint_ops
 from object_detection.core import standard_fields as fields
 from object_detection.utils import shape_utils
 
+from object_detection.utils.color_recognition_module import color_recognition_api
+
 _TITLE_LEFT_MARGIN = 10
 _TITLE_TOP_MARGIN = 10
 STANDARD_COLORS = [
@@ -208,6 +210,7 @@ def draw_bounding_box_on_image(image,
                (left, top)],
               width=thickness,
               fill=color)
+  predicted_color = color_recognition_api.color_recognition(np.asarray(image))
   try:
     font = ImageFont.truetype('arial.ttf', 24)
   except IOError:
@@ -224,9 +227,12 @@ def draw_bounding_box_on_image(image,
     text_bottom = top
   else:
     text_bottom = bottom + total_display_str_height
+
+  
   # Reverse list and print from bottom to top.
   for display_str in display_str_list[::-1]:
-    text_width, text_height = font.getsize(display_str)
+    car_title = display_str + ' ' + predicted_color
+    text_width, text_height = font.getsize(car_title)
     margin = np.ceil(0.05 * text_height)
     draw.rectangle(
         [(left, text_bottom - text_height - 2 * margin), (left + text_width,
@@ -234,7 +240,7 @@ def draw_bounding_box_on_image(image,
         fill=color)
     draw.text(
         (left + margin, text_bottom - text_height - margin),
-        display_str,
+        car_title,
         fill='black',
         font=font)
     text_bottom -= text_height - 2 * margin
