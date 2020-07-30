@@ -136,6 +136,7 @@ def draw_bounding_box_on_image_array(image,
                                      ymax,
                                      xmax,
                                      color='red',
+                                     predicted_color='black',
                                      thickness=4,
                                      display_str_list=(),
                                      use_normalized_coordinates=True):
@@ -159,7 +160,8 @@ def draw_bounding_box_on_image_array(image,
       coordinates as absolute.
   """
   image_pil = Image.fromarray(np.uint8(image)).convert('RGB')
-  draw_bounding_box_on_image(image_pil, ymin, xmin, ymax, xmax, color,
+
+  draw_bounding_box_on_image(image_pil, ymin, xmin, ymax, xmax, color, predicted_color,
                              thickness, display_str_list,
                              use_normalized_coordinates)
   np.copyto(image, np.array(image_pil))
@@ -171,6 +173,7 @@ def draw_bounding_box_on_image(image,
                                ymax,
                                xmax,
                                color='red',
+                               predicted_color='black',
                                thickness=4,
                                display_str_list=(),
                                use_normalized_coordinates=True):
@@ -204,13 +207,15 @@ def draw_bounding_box_on_image(image,
     (left, right, top, bottom) = (xmin * im_width, xmax * im_width,
                                   ymin * im_height, ymax * im_height)
   else:
-    (left, right, top, bottom) = (xmin, xmax, ymin, ymax)
+    (left, right, top, bottom) = (xmin, xmax, ymin, ymax)  
+
   if thickness > 0:
     draw.line([(left, top), (left, bottom), (right, bottom), (right, top),
                (left, top)],
               width=thickness,
               fill=color)
-  predicted_color = color_recognition_api.color_recognition(np.asarray(image))
+
+  
   try:
     font = ImageFont.truetype('arial.ttf', 24)
   except IOError:
@@ -1168,13 +1173,28 @@ def visualize_boxes_and_labels_on_image_array(
   box_to_keypoints_map = collections.defaultdict(list)
   box_to_keypoint_scores_map = collections.defaultdict(list)
   box_to_track_ids_map = {}
+  box_to_predicted_color_map = collections.defaultdict(str)
+
+  im_width, im_height = Image.fromarray(image).size
+
   if not max_boxes_to_draw:
     max_boxes_to_draw = boxes.shape[0]
   for i in range(boxes.shape[0]):
     if max_boxes_to_draw == len(box_to_color_map):
       break
-    if scores is None or scores[i] > min_score_thresh:
+    if scores is None or scores[i] > min_score_thresh:      
       box = tuple(boxes[i].tolist())
+      ymin, xmin, ymax, xmax = box
+
+      if use_normalized_coordinates:
+        (left, right, top, bottom) = (xmin * im_width, xmax * im_width,
+                                      ymin * im_height, ymax * im_height)
+      else:
+        (left, right, top, bottom) = (xmin, xmax, ymin, ymax)
+      
+      detected_vehicle_array = image[int(top):int(bottom), int(left):int(right)]     
+      predicted_color = color_recognition_api.color_recognition(detected_vehicle_array)       
+      
       if instance_masks is not None:
         box_to_instance_masks_map[box] = instance_masks[i]
       if instance_boundaries is not None:
@@ -1216,10 +1236,11 @@ def visualize_boxes_and_labels_on_image_array(
         else:
           box_to_color_map[box] = STANDARD_COLORS[
               classes[i] % len(STANDARD_COLORS)]
-
+      box_to_predicted_color_map[box] = predicted_color
   # Draw all boxes onto image.
-  for box, color in box_to_color_map.items():
+  for box, color in box_to_color_map.items():    
     ymin, xmin, ymax, xmax = box
+        
     if instance_masks is not None:
       draw_mask_on_image_array(
           image,
@@ -1238,8 +1259,9 @@ def visualize_boxes_and_labels_on_image_array(
         ymin,
         xmin,
         ymax,
-        xmax,
+        xmax,        
         color=color,
+        predicted_color = box_to_predicted_color_map[box],
         thickness=0 if skip_boxes else line_thickness,
         display_str_list=box_to_display_str_map[box],
         use_normalized_coordinates=use_normalized_coordinates)
