@@ -79,7 +79,7 @@ def show_inference(model, image_path):
   # Actual detection.
   output_dict = run_inference_for_single_image(model, image_np)
   # Visualization of the results of a detection.
-  vis_util.visualize_boxes_and_labels_on_image_array(
+  output_image, numOfCars, numOfPerson = vis_util.visualize_boxes_and_labels_on_image_array(
       image_np,
       output_dict['detection_boxes'],
       output_dict['detection_classes'],
@@ -90,16 +90,25 @@ def show_inference(model, image_path):
       line_thickness=4)
   
   cv2.putText(
-      image_np,
-      'Detected Vehicles: ' + str(output_dict['num_detections']),
+      output_image,
+      'Detected Vehicles: ' + str(numOfCars),
       (10, 35),
       cv2.FONT_HERSHEY_SIMPLEX,
       0.8,
       (0, 0xFF, 0xFF),
       2,
       cv2.FONT_HERSHEY_SIMPLEX)
+  cv2.putText(
+      output_image,
+      'Detected People: ' + str(numOfPerson),
+      (10, 70),
+      cv2.FONT_HERSHEY_SIMPLEX,
+      0.8,
+      (0, 0xFF, 0xFF),
+      2,
+      cv2.FONT_HERSHEY_SIMPLEX)
   
-  return Image.fromarray(image_np, 'RGB')  
+  return Image.fromarray(output_image)
 
 # List of the strings that is used to add correct label for each box.
 PATH_TO_LABELS = 'object_detection/data/mscoco_label_map.pbtxt'
@@ -107,7 +116,7 @@ category_index = label_map_util.create_category_index_from_labelmap(PATH_TO_LABE
 
 # If you want to test the code with your images, just add path to the images to the TEST_IMAGE_PATHS.
 PATH_TO_TEST_IMAGES_DIR = pathlib.Path('object_detection/test_images')
-TEST_IMAGE_PATHS = sorted(list(PATH_TO_TEST_IMAGES_DIR.glob("*.jpeg")))
+TEST_IMAGE_PATHS = sorted(list(PATH_TO_TEST_IMAGES_DIR.glob("*.png")))
 
 model_name = 'ssd_resnet101_v1_fpn_1024x1024_coco17_tpu-8' #'efficientdet_d6_coco17_tpu-32'
 detection_model = load_model(model_name)

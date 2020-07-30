@@ -1175,6 +1175,9 @@ def visualize_boxes_and_labels_on_image_array(
   box_to_track_ids_map = {}
   box_to_predicted_color_map = collections.defaultdict(str)
 
+  numOfCars = 0
+  numOfPerson = 0
+
   im_width, im_height = Image.fromarray(image).size
 
   if not max_boxes_to_draw:
@@ -1194,7 +1197,7 @@ def visualize_boxes_and_labels_on_image_array(
       
       detected_vehicle_array = image[int(top):int(bottom), int(left):int(right)]     
       predicted_color = color_recognition_api.color_recognition(detected_vehicle_array)       
-      
+      class_name = 'N/A'
       if instance_masks is not None:
         box_to_instance_masks_map[box] = instance_masks[i]
       if instance_boundaries is not None:
@@ -1236,11 +1239,15 @@ def visualize_boxes_and_labels_on_image_array(
         else:
           box_to_color_map[box] = STANDARD_COLORS[
               classes[i] % len(STANDARD_COLORS)]
+      if class_name == 'car' :
+        numOfCars = numOfCars + 1
+      elif class_name == 'person':
+        numOfPerson = numOfPerson + 1
       box_to_predicted_color_map[box] = predicted_color
   # Draw all boxes onto image.
   for box, color in box_to_color_map.items():    
     ymin, xmin, ymax, xmax = box
-        
+
     if instance_masks is not None:
       draw_mask_on_image_array(
           image,
@@ -1281,7 +1288,7 @@ def visualize_boxes_and_labels_on_image_array(
           keypoint_edge_color=color,
           keypoint_edge_width=line_thickness // 2)
 
-  return image
+  return image, numOfCars, numOfPerson
 
 
 def add_cdf_image_summary(values, name):
